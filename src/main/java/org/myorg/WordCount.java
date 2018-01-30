@@ -2,6 +2,8 @@ package org.myorg;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.StringTokenizer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -40,16 +42,20 @@ public class WordCount {
 //        word.set(tokenizer.nextToken());
 //        context.write(word, one);
       }
+      Set<Entry<String, IntWritable>> entries = combiner.entrySet();
+      for (Entry<String, IntWritable> entry : entries) {
+        word.set(entry.getKey());
+        context.write(word, entry.getValue());
+      }
 
-      combiner.forEach((k, v) -> {
-        word.set(k);
-        try {
-          context.write(word, v);
-        } catch (IOException | InterruptedException e) {
-          e.printStackTrace();
-        }
-      });
-
+//      combiner.forEach((k, v) -> {
+//        word.set(k);
+//        try {
+//          context.write(word, v);
+//        } catch (IOException | InterruptedException e) {
+//          e.printStackTrace();
+//        }
+//      });
 
     }
   }
