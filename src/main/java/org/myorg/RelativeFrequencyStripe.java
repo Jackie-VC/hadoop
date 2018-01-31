@@ -27,17 +27,6 @@ public class RelativeFrequencyStripe {
 
     private static final IntWritable one = new IntWritable(1);
 
-    /*
-    Class Mapper
-  map(docid a, doc d)
-    for all term w in doc do
-       H = new AssociatedArray
-       for all term u in Neighbor(w) do
-          H{u} = H{u} + 1
-       Emit(w, H)
-
-     */
-
     @Override
     public void map(LongWritable key, Text value, Context context)
         throws IOException, InterruptedException {
