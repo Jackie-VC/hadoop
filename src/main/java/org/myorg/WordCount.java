@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringTokenizer;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -24,38 +25,31 @@ public class WordCount {
 
     private static final IntWritable one = new IntWritable(1);
     private Text word = new Text();
-    private static java.util.Map<String, IntWritable> combiner = new HashMap<>();
+//    private static java.util.Map<String, IntWritable> combiner = new HashMap<>();
 
     @Override
     public void map(LongWritable key, Text value, Context context)
         throws IOException, InterruptedException {
+    	java.util.Map<String, IntWritable> combiner = new HashMap<>();
       String line = value.toString();
       StringTokenizer tokenizer = new StringTokenizer(line);
       while (tokenizer.hasMoreTokens()) {
-        if (combiner.get(tokenizer.nextToken()) == null) {
-          combiner.put(tokenizer.nextToken(), new IntWritable(one.get()));
+    	  String nextToken = tokenizer.nextToken();
+        if (combiner.get(nextToken) == null) {
+          combiner.put(nextToken, new IntWritable(one.get()));
         } else {
-          Integer oldCount = combiner.get(tokenizer.nextToken()).get();
-          combiner.put(tokenizer.nextToken(), new IntWritable(oldCount + one.get()));
+          Integer oldCount = combiner.get(nextToken).get();
+          combiner.put(nextToken, new IntWritable(oldCount + one.get()));
 
         }
-//        word.set(tokenizer.nextToken());
-//        context.write(word, one);
       }
+      
       Set<Entry<String, IntWritable>> entries = combiner.entrySet();
-      for (Entry<String, IntWritable> entry : entries) {
-        word.set(entry.getKey());
-        context.write(word, entry.getValue());
-      }
+      for(Entry<String, IntWritable> entry : entries){
 
-//      combiner.forEach((k, v) -> {
-//        word.set(k);
-//        try {
-//          context.write(word, v);
-//        } catch (IOException | InterruptedException e) {
-//          e.printStackTrace();
-//        }
-//      });
+    	  word.set(entry.getKey());
+    	  context.write(word, entry.getValue());
+      }
 
     }
   }
@@ -77,7 +71,7 @@ public class WordCount {
     Configuration conf = new Configuration();
 
     Job job = new Job(conf, "wordcount");
-    job.setJarByClass(Map.class);
+    job.setJarByClass(WordCount.class);
 
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(IntWritable.class);
