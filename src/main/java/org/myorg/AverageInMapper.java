@@ -1,6 +1,7 @@
 package org.myorg;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.StringTokenizer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -15,17 +16,19 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-public class WordCountAverage {
+public class AverageInMapper {
 
   public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
 
     private Text word = new Text();
     private static String firstToken;
-    private static String lastToken;
+    private static int lastToken;
+    private static java.util.Map<String, Integer> combiner = new HashMap<>();
 
     @Override
     public void map(LongWritable key, Text value, Context context)
         throws IOException, InterruptedException {
+
       String line = value.toString();
       StringTokenizer tokenizer = new StringTokenizer(line);
       String nextToken = "";
@@ -34,10 +37,14 @@ public class WordCountAverage {
         if (firstToken == null) {
           firstToken = nextToken;
         }
-        lastToken = nextToken;
+        lastToken = Integer.parseInt(nextToken);
       }
+      if (combiner.containsKey(firstToken)) {
+        lastToken = lastToken + combiner.get(firstToken);
+      }
+      combiner.put(firstToken, lastToken);
       word.set(firstToken);
-      context.write(word, new IntWritable(Integer.parseInt(lastToken)));
+      context.write(word, new IntWritable(combiner.get(firstToken)));
     }
   }
 
@@ -64,7 +71,7 @@ public class WordCountAverage {
     Configuration conf = new Configuration();
 
     Job job = new Job(conf, "wordcount");
-    job.setJarByClass(WordCountAverage.class);
+    job.setJarByClass(AverageInMapper.class);
 
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(IntWritable.class);
