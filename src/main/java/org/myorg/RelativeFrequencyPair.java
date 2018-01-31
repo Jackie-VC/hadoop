@@ -1,7 +1,9 @@
 package org.myorg;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.StringTokenizer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -28,14 +30,23 @@ public class RelativeFrequencyPair {
         throws IOException, InterruptedException {
       String line = value.toString();
       StringTokenizer tokenizer = new StringTokenizer(line);
+      List<String> wordList = new ArrayList<>();
       while (tokenizer.hasMoreTokens()) {
         String nextToken = tokenizer.nextToken();
-        Pair<String, String> pair = new Pair<>();
-        pair.setKey(nextToken);
-        pair.setValue(one.toString());
-        context.write(pair, one);
-        pair.setValue("*");
-        context.write(pair, one);
+        wordList.add(nextToken);
+      }
+
+      for (int i = 0; i < wordList.size(); i++) {
+        for (int j = 0; j < 2 && j < wordList.size() - i - 1; j++) {
+          if (wordList.get(i).equals(wordList.get(j))) {
+            Pair<String, String> pair = new Pair<>();
+            pair.setKey(wordList.get(i));
+            pair.setValue(wordList.get(j));
+            context.write(pair, one);
+            pair.setValue("*");
+            context.write(pair, one);
+          }
+        }
       }
     }
   }
