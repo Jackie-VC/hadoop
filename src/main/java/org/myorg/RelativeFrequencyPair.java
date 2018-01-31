@@ -1,12 +1,11 @@
 package org.myorg;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map.Entry;
-import java.util.Set;
+import java.util.Iterator;
 import java.util.StringTokenizer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -20,49 +19,46 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class RelativeFrequencyPair {
 
-  public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
+  public static class Map extends Mapper<LongWritable, Text, Pair<String, String>, IntWritable> {
 
     private static final IntWritable one = new IntWritable(1);
-    private Text word = new Text();
-//    private static java.util.Map<String, IntWritable> combiner = new HashMap<>();
 
     @Override
     public void map(LongWritable key, Text value, Context context)
         throws IOException, InterruptedException {
-      java.util.Map<String, IntWritable> combiner = new HashMap<>();
       String line = value.toString();
       StringTokenizer tokenizer = new StringTokenizer(line);
       while (tokenizer.hasMoreTokens()) {
         String nextToken = tokenizer.nextToken();
-        if (combiner.get(nextToken) == null) {
-          combiner.put(nextToken, new IntWritable(one.get()));
-        } else {
-          Integer oldCount = combiner.get(nextToken).get();
-          combiner.put(nextToken, new IntWritable(oldCount + one.get()));
-
-        }
+        Pair<String, String> pair = new Pair<>();
+        pair.setKey(nextToken);
+        pair.setValue(one.toString());
+        context.write(pair, one);
+        pair.setValue("*");
+        context.write(pair, one);
       }
-
-      Set<Entry<String, IntWritable>> entries = combiner.entrySet();
-      for (Entry<String, IntWritable> entry : entries) {
-
-        word.set(entry.getKey());
-        context.write(word, entry.getValue());
-      }
-
     }
   }
 
-  public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
+  public static class Reduce extends
+      Reducer<Pair<String, String>, IntWritable, Pair<String, String>, DoubleWritable> {
+
+    private static double total = 1d;
 
     @Override
-    public void reduce(Text key, Iterable<IntWritable> values, Context context)
+    protected void reduce(Pair<String, String> key, Iterable<IntWritable> values, Context context)
         throws IOException, InterruptedException {
-      int sum = 0;
-      for (IntWritable val : values) {
-        sum += val.get();
+      int s = 0;
+      Iterator<IntWritable> iterator = values.iterator();
+      while (iterator.hasNext()) {
+        IntWritable c = iterator.next();
+        s += c.get();
       }
-      context.write(key, new IntWritable(sum));
+      if (key.getValue().equals("*")) {
+        total = s;
+      } else {
+        context.write(key, new DoubleWritable(s / (total == 0 ? 1 : total)));
+      }
     }
   }
 

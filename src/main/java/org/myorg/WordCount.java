@@ -25,7 +25,6 @@ public class WordCount {
 
     private static final IntWritable one = new IntWritable(1);
     private Text word = new Text();
-//    private static java.util.Map<String, IntWritable> combiner = new HashMap<>();
 
     @Override
     public void map(LongWritable key, Text value, Context context)
