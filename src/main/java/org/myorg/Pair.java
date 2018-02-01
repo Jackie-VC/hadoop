@@ -51,4 +51,12 @@ public class Pair<K, V> {
 
     return Objects.hash(getKey());
   }
+
+  @Override
+  public String toString() {
+    return "{" +
+        "key=" + key +
+        ", value=" + value +
+        '}';
+  }
 }
