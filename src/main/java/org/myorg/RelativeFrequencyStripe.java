@@ -1,8 +1,10 @@
 package org.myorg;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -32,15 +34,33 @@ public class RelativeFrequencyStripe {
         throws IOException, InterruptedException {
       String line = value.toString();
       StringTokenizer tokenizer = new StringTokenizer(line);
-      java.util.Map<String, IntWritable> strip = new HashMap<>();
+
+      // put all the words in a list
+      List<String> wordList = new ArrayList<>();
       while (tokenizer.hasMoreTokens()) {
         String nextToken = tokenizer.nextToken();
-        if (strip.containsKey(nextToken)) {
-          strip.put(nextToken, new IntWritable(strip.get(nextToken).get() + one.get()));
-        } else {
-          strip.put(nextToken, one);
+        wordList.add(nextToken);
+      }
+
+      // find the corresponding neighbors of every word in list
+      // put neighbors and their frequency into a map
+      for (int i = 0; i < wordList.size(); i++) {
+        int count = 0;
+        java.util.Map<String, IntWritable> strip = new HashMap<>();
+        for (int j = i + 1; count < 2 && j < wordList.size() - i - 1; j++) {
+          if (!wordList.get(i).equals(wordList.get(j))) {
+            String currentWord = wordList.get(j);
+            if (strip.containsKey(currentWord)) {
+              strip.put(currentWord, new IntWritable(strip.get(currentWord).get() + one.get()));
+            } else {
+              strip.put(currentWord, one);
+            }
+            count++;
+          }
         }
-        context.write(new Text(nextToken), strip);
+
+        // output the word as key, neighbors map as value
+        context.write(new Text(wordList.get(i)), strip);
       }
     }
   }
