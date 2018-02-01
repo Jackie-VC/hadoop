@@ -1,8 +1,11 @@
 package org.myorg;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.MapType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -56,12 +59,12 @@ public class RelativeFrequencyPair {
   }
 
   public static class Reduce extends
-      Reducer<Pair<String, String>, IntWritable, Pair<String, String>, DoubleWritable> {
+      Reducer<Text, IntWritable, Pair<String, String>, DoubleWritable> {
 
     private static double total = 1d;
 
     @Override
-    protected void reduce(Pair<String, String> key, Iterable<IntWritable> values, Context context)
+    protected void reduce(Text key, Iterable<IntWritable> values, Context context)
         throws IOException, InterruptedException {
       int s = 0;
       Iterator<IntWritable> iterator = values.iterator();
@@ -69,10 +72,13 @@ public class RelativeFrequencyPair {
         IntWritable c = iterator.next();
         s += c.get();
       }
-      if (key.getValue().equals("*")) {
+      ObjectMapper objectMapper = new ObjectMapper();
+      Pair<String, String> pair = objectMapper.readValue(key.toString(), Pair.class);
+
+      if (pair.getValue().equals("*")) {
         total = s;
       } else {
-        context.write(key, new DoubleWritable(s / (total == 0 ? 1 : total)));
+        context.write(pair, new DoubleWritable(s / (total == 0 ? 1 : total)));
       }
     }
   }
