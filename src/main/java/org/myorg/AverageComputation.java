@@ -20,8 +20,9 @@ public class AverageComputation {
   public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
 
     private Text word = new Text();
-    private static String firstToken;
-    private static String lastToken;
+    private String firstToken;
+    private String beforeLastToken;
+    private String lastToken;
 
     @Override
     public void map(LongWritable key, Text value, Context context)
@@ -34,9 +35,16 @@ public class AverageComputation {
         if (firstToken == null) {
           firstToken = nextToken;
         }
+        beforeLastToken = lastToken;
         lastToken = nextToken;
       }
       word.set(firstToken);
+      try{
+    	  Integer.parseInt(lastToken);
+      }catch(NumberFormatException e){
+    	  lastToken = beforeLastToken;
+      }
+      
       context.write(word, new IntWritable(Integer.parseInt(lastToken)));
     }
   }
