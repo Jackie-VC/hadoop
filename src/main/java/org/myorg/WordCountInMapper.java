@@ -1,7 +1,11 @@
 package org.myorg;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.StringTokenizer;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -15,26 +19,43 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-public class WordCount {
+public class WordCountInMapper {
 
   public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
 
-    private final static IntWritable one = new IntWritable(1);
+    private static final IntWritable one = new IntWritable(1);
     private Text word = new Text();
 
+    @Override
     public void map(LongWritable key, Text value, Context context)
         throws IOException, InterruptedException {
+    	java.util.Map<String, IntWritable> combiner = new HashMap<>();
       String line = value.toString();
       StringTokenizer tokenizer = new StringTokenizer(line);
       while (tokenizer.hasMoreTokens()) {
-        word.set(tokenizer.nextToken());
-        context.write(word, one);
+    	  String nextToken = tokenizer.nextToken();
+        if (combiner.get(nextToken) == null) {
+          combiner.put(nextToken, new IntWritable(one.get()));
+        } else {
+          Integer oldCount = combiner.get(nextToken).get();
+          combiner.put(nextToken, new IntWritable(oldCount + one.get()));
+
+        }
       }
+      
+      Set<Entry<String, IntWritable>> entries = combiner.entrySet();
+      for(Entry<String, IntWritable> entry : entries){
+
+    	  word.set(entry.getKey());
+    	  context.write(word, entry.getValue());
+      }
+
     }
   }
 
   public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
 
+    @Override
     public void reduce(Text key, Iterable<IntWritable> values, Context context)
         throws IOException, InterruptedException {
       int sum = 0;
@@ -49,6 +70,7 @@ public class WordCount {
     Configuration conf = new Configuration();
 
     Job job = new Job(conf, "wordcount");
+    job.setJarByClass(WordCountInMapper.class);
 
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(IntWritable.class);
@@ -65,4 +87,6 @@ public class WordCount {
     job.waitForCompletion(true);
   }
 
+
 }
+
