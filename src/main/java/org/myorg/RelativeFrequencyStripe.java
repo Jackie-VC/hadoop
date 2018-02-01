@@ -87,7 +87,7 @@ public class RelativeFrequencyStripe {
     job.setJarByClass(RelativeFrequencyStripe.class);
 
     job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(IntWritable.class);
+    job.setOutputValueClass(java.util.Map.class);
 
     job.setMapperClass(Map.class);
     job.setReducerClass(Reduce.class);

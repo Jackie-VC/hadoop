@@ -97,7 +97,7 @@ public class RelativeFrequencyHybrid {
     Job job = new Job(conf, "wordcount");
     job.setJarByClass(RelativeFrequencyHybrid.class);
 
-    job.setOutputKeyClass(Text.class);
+    job.setOutputKeyClass(Pair.class);
     job.setOutputValueClass(IntWritable.class);
 
     job.setMapperClass(Map.class);
