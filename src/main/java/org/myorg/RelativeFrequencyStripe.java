@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.StringTokenizer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -66,36 +65,34 @@ public class RelativeFrequencyStripe {
   }
 
   public static class Reduce extends
-      Reducer<Text, java.util.Map<String, IntWritable>, Text, java.util.Map<Text, java.util.Map<String, DoubleWritable>>> {
+      Reducer<Text, java.util.Map<String, IntWritable>, Text, java.util.Map<String, DoubleWritable>> {
 
     @Override
     protected void reduce(Text key, Iterable<java.util.Map<String, IntWritable>> values,
         Context context)
         throws IOException, InterruptedException {
-      double sum = 0;
-      java.util.Map<Text, java.util.Map<String, DoubleWritable>> hf = new HashMap<>();
 
-      Iterator<java.util.Map<String, IntWritable>> iterator = values.iterator();
-      while (iterator.hasNext()) {
-        java.util.Map<String, IntWritable> strip = iterator.next();
-        Iterator<IntWritable> iteratorSum = strip.values().iterator();
-        while (iteratorSum.hasNext()) {
-          sum = +iteratorSum.next().get();
+      double sum = 0d;
+      java.util.Map<String, DoubleWritable> newMap = new HashMap<>();
+      Iterator<java.util.Map<String, IntWritable>> mapIterator = values.iterator();
+      while (mapIterator.hasNext()) {
+        java.util.Map<String, IntWritable> next = mapIterator.next();
+        Iterator<Entry<String, IntWritable>> iterator = next.entrySet().iterator();
+        while (iterator.hasNext()) {
+          Entry<String, IntWritable> next1 = iterator.next();
+          sum += next1.getValue().get();
+          if (newMap.containsKey(next1.getKey())) {
+            double newValue = newMap.get(next1.getKey()).get() + next1.getValue().get();
+            newMap.put(next1.getKey(), new DoubleWritable(newValue));
+          }
         }
       }
 
-      iterator = values.iterator();
-      while (iterator.hasNext()) {
-        java.util.Map<String, IntWritable> strip = iterator.next();
-        java.util.Map<String, DoubleWritable> stripDouble = new HashMap<>();
-        Set<Entry<String, IntWritable>> entries = strip.entrySet();
-        for (Entry<String, IntWritable> entry : entries) {
-          stripDouble.put(entry.getKey(), new DoubleWritable(entry.getValue().get() / sum));
-        }
-        hf.put(key, stripDouble);
+      for (Entry<String, DoubleWritable> entry : newMap.entrySet()) {
+        newMap.put(entry.getKey(), new DoubleWritable(entry.getValue().get() / sum));
       }
+      context.write(key, newMap);
 
-      context.write(key, hf);
     }
 
   }
