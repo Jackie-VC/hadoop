@@ -3,6 +3,7 @@ package org.myorg;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.StringTokenizer;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -21,8 +22,9 @@ public class AverageInMapper {
   public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
 
     private Text word = new Text();
-    private static String firstToken;
-    private static int lastToken;
+    private String firstToken;
+    private int lastToken;
+    private int beforeLastToken;
     private static java.util.Map<String, Integer> combiner = new HashMap<>();
 
     @Override
@@ -37,7 +39,12 @@ public class AverageInMapper {
         if (firstToken == null) {
           firstToken = nextToken;
         }
-        lastToken = Integer.parseInt(nextToken);
+        beforeLastToken = lastToken;
+        try{
+        	lastToken = Integer.parseInt(nextToken);
+        }catch(NumberFormatException e){
+      	  	lastToken = beforeLastToken;
+        }
       }
       if (combiner.containsKey(firstToken)) {
         lastToken = lastToken + combiner.get(firstToken);
