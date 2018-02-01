@@ -1,5 +1,6 @@
 package org.myorg;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -21,9 +22,10 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class RelativeFrequencyPair {
 
-  public static class Map extends Mapper<LongWritable, Text, Pair<String, String>, IntWritable> {
+  public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
 
     private static final IntWritable one = new IntWritable(1);
+    private Text word = new Text();
 
     @Override
     public void map(LongWritable key, Text value, Context context)
@@ -36,15 +38,17 @@ public class RelativeFrequencyPair {
         wordList.add(nextToken);
       }
 
+      ObjectMapper objectMapper = new ObjectMapper();
       for (int i = 0; i < wordList.size(); i++) {
         for (int j = 0; j < 2 && j < wordList.size() - i - 1; j++) {
           if (wordList.get(i).equals(wordList.get(j))) {
             Pair<String, String> pair = new Pair<>();
             pair.setKey(wordList.get(i));
             pair.setValue(wordList.get(j));
-            context.write(pair, one);
+            word = new Text(objectMapper.writeValueAsString(pair));
+            context.write(word, one);
             pair.setValue("*");
-            context.write(pair, one);
+            context.write(word, one);
           }
         }
       }
