@@ -78,18 +78,18 @@ public class RelativeFrequencyHybrid {
       Pair<String, String> pair = objectMapper.readValue(key.toString(), Pair.class);
 
       if (prevWord.isEmpty() || pair.getKey().equals(prevWord)) {
+        // if the key of pair is the same, we should consider all of them as a group
+        // and compute their total value sum.
         sum += valueTotal;
+
+        // the value of pair indicates the neighbor, so we use neighborCount to record
+        // neighbor's frequency
         wordCount.put(pair.getValue(), valueTotal);
       } else if (!pair.getKey().equals(prevWord)) {
-        Iterator<Double> doubleIterator = wordCount.values().iterator();
-        Double doubleTotal = 0d;
-        while (doubleIterator.hasNext()) {
-          doubleTotal += doubleIterator.next();
-        }
         Iterator<Entry<String, Double>> entryIterator = wordCount.entrySet().iterator();
         while (entryIterator.hasNext()) {
           Entry<String, Double> entry = entryIterator.next();
-          wordCount.put(entry.getKey(), entry.getValue() / doubleTotal);
+          wordCount.put(entry.getKey(), entry.getValue() / sum);
         }
         context.write(new Text(pair.getKey()), wordCount);
         wordCount = new HashMap<>();
