@@ -1,5 +1,6 @@
 package org.myorg;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,9 +23,10 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class RelativeFrequencyHybrid {
 
-  public static class Map extends Mapper<LongWritable, Text, Pair<String, String>, IntWritable> {
+  public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
 
     private static final IntWritable one = new IntWritable(1);
+    private Text word = new Text();
 
     @Override
     public void map(LongWritable key, Text value, Context context)
@@ -37,13 +39,16 @@ public class RelativeFrequencyHybrid {
         wordList.add(nextToken);
       }
 
+      ObjectMapper objectMapper = new ObjectMapper();
+
       for (int i = 0; i < wordList.size(); i++) {
         for (int j = 0; j < 2 && j < wordList.size() - i - 1; j++) {
           if (wordList.get(i).equals(wordList.get(j))) {
             Pair<String, String> pair = new Pair<>();
             pair.setKey(wordList.get(i));
             pair.setValue(wordList.get(j));
-            context.write(pair, one);
+            word = new Text(objectMapper.writeValueAsString(pair));
+            context.write(word, one);
           }
         }
       }
@@ -51,14 +56,14 @@ public class RelativeFrequencyHybrid {
   }
 
   public static class Reduce extends
-      Reducer<Pair<String, String>, IntWritable, Text, java.util.Map<String, Double>> {
+      Reducer<Text, IntWritable, Text, java.util.Map<String, Double>> {
 
     private static double sum = 0d;
     private static String prevWord = "";
     private static java.util.Map<String, Double> wordCount = new HashMap<>();
 
     @Override
-    protected void reduce(Pair<String, String> key, Iterable<IntWritable> values, Context context)
+    protected void reduce(Text key, Iterable<IntWritable> values, Context context)
         throws IOException, InterruptedException {
 
       Double valueTotal = 0d;
@@ -67,10 +72,13 @@ public class RelativeFrequencyHybrid {
         valueTotal += iterator.next().get();
       }
 
-      if (prevWord.isEmpty() || key.getKey().equals(prevWord)) {
+      ObjectMapper objectMapper = new ObjectMapper();
+      Pair<String, String> pair = objectMapper.readValue(key.toString(), Pair.class);
+
+      if (prevWord.isEmpty() || pair.getKey().equals(prevWord)) {
         sum += valueTotal;
-        wordCount.put(key.getValue(), valueTotal);
-      } else if (!key.getKey().equals(prevWord)) {
+        wordCount.put(pair.getValue(), valueTotal);
+      } else if (!pair.getKey().equals(prevWord)) {
         Iterator<Double> doubleIterator = wordCount.values().iterator();
         Double doubleTotal = 0d;
         while (doubleIterator.hasNext()) {
@@ -81,11 +89,11 @@ public class RelativeFrequencyHybrid {
           Entry<String, Double> entry = entryIterator.next();
           wordCount.put(entry.getKey(), entry.getValue() / doubleTotal);
         }
-        context.write(new Text(key.getKey()), wordCount);
+        context.write(new Text(pair.getKey()), wordCount);
         wordCount = new HashMap<>();
       }
 
-      prevWord = key.getKey();
+      prevWord = pair.getKey();
 
     }
 
