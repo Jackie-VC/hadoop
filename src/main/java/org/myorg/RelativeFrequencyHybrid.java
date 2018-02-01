@@ -42,13 +42,15 @@ public class RelativeFrequencyHybrid {
       ObjectMapper objectMapper = new ObjectMapper();
 
       for (int i = 0; i < wordList.size(); i++) {
-        for (int j = 0; j < 2 && j < wordList.size() - i - 1; j++) {
-          if (wordList.get(i).equals(wordList.get(j))) {
+        int count = 0;
+        for (int j = i + 1; count < 2 && j < wordList.size() - i - 1; j++) {
+          if (!wordList.get(i).equals(wordList.get(j))) {
             Pair<String, String> pair = new Pair<>();
             pair.setKey(wordList.get(i));
             pair.setValue(wordList.get(j));
             word = new Text(objectMapper.writeValueAsString(pair));
             context.write(word, one);
+            count++;
           }
         }
       }
