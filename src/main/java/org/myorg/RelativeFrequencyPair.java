@@ -52,6 +52,7 @@ public class RelativeFrequencyPair {
             word = new Text(objectMapper.writeValueAsString(pair));
             context.write(word, one);
             pair.setValue("*");
+            word = new Text(objectMapper.writeValueAsString(pair));
             context.write(word, one);
             count++;
           }
@@ -80,7 +81,7 @@ public class RelativeFrequencyPair {
       if (pair.getValue().equals("*")) {
         total = s;
       } else {
-        context.write(pair, new DoubleWritable(s / (total == 0 ? 1 : total)));
+        context.write(pair, new DoubleWritable(s / total));
       }
     }
   }
