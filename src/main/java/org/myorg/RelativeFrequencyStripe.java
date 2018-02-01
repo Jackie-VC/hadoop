@@ -1,5 +1,6 @@
 package org.myorg;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +25,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 public class RelativeFrequencyStripe {
 
   public static class Map extends
-      Mapper<LongWritable, Text, Text, java.util.Map<String, IntWritable>> {
+      Mapper<LongWritable, Text, Text, Text> {
 
     private static final IntWritable one = new IntWritable(1);
 
@@ -59,25 +60,35 @@ public class RelativeFrequencyStripe {
         }
 
         // output the word as key, neighbors map as value
-        context.write(new Text(wordList.get(i)), strip);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String stripeString = objectMapper.writeValueAsString(strip);
+        context.write(new Text(wordList.get(i)), new Text(stripeString));
       }
     }
   }
 
   public static class Reduce extends
-      Reducer<Text, java.util.Map<String, IntWritable>, Text, java.util.Map<String, DoubleWritable>> {
+      Reducer<Text, Text, Text, java.util.Map<String, DoubleWritable>> {
 
     @Override
-    protected void reduce(Text key, Iterable<java.util.Map<String, IntWritable>> values,
+    protected void reduce(Text key, Iterable<Text> values,
         Context context)
         throws IOException, InterruptedException {
 
       double sum = 0d;
       java.util.Map<String, DoubleWritable> newMap = new HashMap<>();
-      Iterator<java.util.Map<String, IntWritable>> mapIterator = values.iterator();
+      Iterator<Text> iterator1 = values.iterator();
+      while (iterator1.hasNext()) {
+        Text next = iterator1.next();
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.readValue(next.toString(), Map.class);
+      }
+      Iterator<Text> mapIterator = values.iterator();
       while (mapIterator.hasNext()) {
-        java.util.Map<String, IntWritable> next = mapIterator.next();
-        Iterator<Entry<String, IntWritable>> iterator = next.entrySet().iterator();
+        Text next = mapIterator.next();
+        ObjectMapper objectMapper = new ObjectMapper();
+        java.util.Map nextMap = objectMapper.readValue(next.toString(), java.util.Map.class);
+        Iterator<Entry<String, IntWritable>> iterator = nextMap.entrySet().iterator();
         while (iterator.hasNext()) {
           Entry<String, IntWritable> next1 = iterator.next();
           sum += next1.getValue().get();
