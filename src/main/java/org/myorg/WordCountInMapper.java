@@ -25,11 +25,12 @@ public class WordCountInMapper {
 
     private static final IntWritable one = new IntWritable(1);
     private Text word = new Text();
+    private static java.util.Map<String, IntWritable> combiner = new HashMap<>();
 
     @Override
     public void map(LongWritable key, Text value, Context context)
         throws IOException, InterruptedException {
-    	java.util.Map<String, IntWritable> combiner = new HashMap<>();
+
       String line = value.toString();
       StringTokenizer tokenizer = new StringTokenizer(line);
       while (tokenizer.hasMoreTokens()) {
@@ -42,14 +43,16 @@ public class WordCountInMapper {
 
         }
       }
-      
+    }
+
+    @Override
+    protected void cleanup(Context context) throws IOException, InterruptedException {
       Set<Entry<String, IntWritable>> entries = combiner.entrySet();
       for(Entry<String, IntWritable> entry : entries){
 
-    	  word.set(entry.getKey());
-    	  context.write(word, entry.getValue());
+        word.set(entry.getKey());
+        context.write(word, entry.getValue());
       }
-
     }
   }
 
