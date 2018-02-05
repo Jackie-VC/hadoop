@@ -66,13 +66,13 @@ public class AverageInMapperComputation {
     public void reduce(Text key, Iterable<IntWritable> values,
         Context context
     ) throws IOException, InterruptedException {
-      int average = 0;
       int count = 1;
+      int sum = 0;
       for (IntWritable val : values) {
-        average = (average + val.get()) / (count + 1);
+        sum = (sum + val.get());
         count++;
       }
-      result.set(average);
+      result.set(sum/count);
       context.write(key, result);
     }
   }
