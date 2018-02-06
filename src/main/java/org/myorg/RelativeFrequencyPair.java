@@ -1,11 +1,9 @@
 package org.myorg;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -15,6 +13,7 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -25,7 +24,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class RelativeFrequencyPair {
 
-  public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
+  public static class Map extends Mapper<LongWritable, Text, MapPairString, IntWritable> {
 
     private static final IntWritable one = new IntWritable(1);
     private Text word = new Text();
@@ -41,20 +40,19 @@ public class RelativeFrequencyPair {
         wordList.add(nextToken);
       }
 
-      ObjectMapper objectMapper = new ObjectMapper();
       for (int i = 0; i < wordList.size(); i++) {
         int count = 0;
-        for (int j = i + 1; count < 2 && j < wordList.size() - i - 1; j++) {
+        for (int j = i + 1; count < 2 && j < wordList.size(); j++) {
           if (!wordList.get(i).equals(wordList.get(j))) {
-            Pair<String, String> pair = new Pair<>();
-            pair.setKey(wordList.get(i));
-            pair.setValue(wordList.get(j));
-            word = new Text(objectMapper.writeValueAsString(pair));
-            context.write(word, one);
-            pair.setValue("*");
-            word = new Text(objectMapper.writeValueAsString(pair));
-            context.write(word, one);
+            MapPairString pair = new MapPairString();
+            pair.key = new Text(wordList.get(i));
+            pair.value = new Text(wordList.get(j));
+            context.write(pair, one);
+            pair.value = new Text("*");
+            context.write(pair, one);
             count++;
+          } else {
+            break;
           }
         }
       }
@@ -62,37 +60,95 @@ public class RelativeFrequencyPair {
   }
 
   public static class Reduce extends
-      Reducer<Text, IntWritable, Pair<String, String>, DoubleWritable> {
+      Reducer<MapPairString, IntWritable, MapPairString, DoubleWritable> {
 
     private static double total = 1d;
 
     @Override
-    protected void reduce(Text key, Iterable<IntWritable> values, Context context)
+    protected void reduce(MapPairString key, Iterable<IntWritable> values, Context context)
         throws IOException, InterruptedException {
       int s = 0;
-      Iterator<IntWritable> iterator = values.iterator();
-      while (iterator.hasNext()) {
-        IntWritable c = iterator.next();
+      for (IntWritable c : values) {
         s += c.get();
       }
-      ObjectMapper objectMapper = new ObjectMapper();
-      Pair<String, String> pair = objectMapper.readValue(key.toString(), Pair.class);
 
-      if (pair.getValue().equals("*")) {
+      if (key.value.toString().equals("*")) {
         total = s;
       } else {
-        context.write(pair, new DoubleWritable(s / total));
+        context.write(key, new DoubleWritable(s / total));
       }
+    }
+  }
+
+  static class MapPair extends Pair<Text, IntWritable> implements WritableComparable<MapPair> {
+
+    public MapPair() {
+    }
+
+    @Override
+    public int compareTo(MapPair o) {
+      if (o == null) {
+        return 1;
+      }
+      if (key.compareTo(o.key) == 0) {
+        return value.compareTo(o.value);
+      } else {
+        return key.compareTo(o.key);
+      }
+    }
+
+    @Override
+    public void write(DataOutput dataOutput) throws IOException {
+      key.write(dataOutput);
+      value.write(dataOutput);
+    }
+
+    @Override
+    public void readFields(DataInput dataInput) throws IOException {
+      key.readFields(dataInput);
+      value.readFields(dataInput);
+    }
+  }
+
+  static class MapPairString extends Pair<Text, Text> implements WritableComparable<MapPairString> {
+
+    public MapPairString() {
+      this.key = new Text();
+      this.value = new Text();
+    }
+
+    @Override
+    public int compareTo(MapPairString o) {
+      if (o == null) {
+        return 1;
+      }
+      if (key.compareTo(o.key) == 0) {
+        return value.compareTo(o.value);
+      } else {
+        return key.compareTo(o.key);
+      }
+    }
+
+    @Override
+    public void write(DataOutput dataOutput) throws IOException {
+      this.key.write(dataOutput);
+      this.value.write(dataOutput);
+    }
+
+    @Override
+    public void readFields(DataInput dataInput) throws IOException {
+      this.key.readFields(dataInput);
+      this.value.readFields(dataInput);
     }
   }
 
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
 
-    Job job = new Job(conf, "wordcount");
+    Job job = new Job(conf, "relativefrequency");
     job.setJarByClass(RelativeFrequencyPair.class);
 
-    job.setOutputKeyClass(Text.class);
+    job.setOutputKeyClass(MapPairString.class);
     job.setOutputValueClass(IntWritable.class);
 
     job.setMapperClass(Map.class);

@@ -1,0 +1,85 @@
+[cloudera@quickstart hadoop]$ hadoop jar /home/cloudera/git/hadoop/target/hadoop-1.0-SNAPSHOT.jar  org.myorg.RelativeFrequencyPair /user/cloudera/RelativeFrequencyPair/input /user/cloudera/RelativeFrequencyPair/output
+18/01/31 19:22:44 INFO client.RMProxy: Connecting to ResourceManager at /0.0.0.0:8032
+18/01/31 19:22:47 WARN mapreduce.JobResourceUploader: Hadoop command-line option parsing not performed. Implement the Tool interface and execute your application with ToolRunner to remedy this.
+18/01/31 19:22:48 INFO input.FileInputFormat: Total input paths to process : 1
+18/01/31 19:22:48 WARN hdfs.DFSClient: Caught exception 
+java.lang.InterruptedException
+	at java.lang.Object.wait(Native Method)
+	at java.lang.Thread.join(Thread.java:1281)
+	at java.lang.Thread.join(Thread.java:1355)
+	at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.closeResponder(DFSOutputStream.java:952)
+	at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.endBlock(DFSOutputStream.java:690)
+	at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.run(DFSOutputStream.java:879)
+18/01/31 19:22:48 INFO mapreduce.JobSubmitter: number of splits:1
+18/01/31 19:22:49 INFO mapreduce.JobSubmitter: Submitting tokens for job: job_1517258179611_0016
+18/01/31 19:22:50 INFO impl.YarnClientImpl: Submitted application application_1517258179611_0016
+18/01/31 19:22:51 INFO mapreduce.Job: The url to track the job: http://quickstart.cloudera:8088/proxy/application_1517258179611_0016/
+18/01/31 19:22:51 INFO mapreduce.Job: Running job: job_1517258179611_0016
+18/01/31 19:23:17 INFO mapreduce.Job: Job job_1517258179611_0016 running in uber mode : false
+18/01/31 19:23:17 INFO mapreduce.Job:  map 0% reduce 0%
+18/01/31 19:23:38 INFO mapreduce.Job:  map 100% reduce 0%
+18/01/31 19:24:00 INFO mapreduce.Job:  map 100% reduce 100%
+18/01/31 19:24:01 INFO mapreduce.Job: Job job_1517258179611_0016 completed successfully
+18/01/31 19:24:02 INFO mapreduce.Job: Counters: 49
+	File System Counters
+		FILE: Number of bytes read=15126
+		FILE: Number of bytes written=280849
+		FILE: Number of read operations=0
+		FILE: Number of large read operations=0
+		FILE: Number of write operations=0
+		HDFS: Number of bytes read=15137
+		HDFS: Number of bytes written=160
+		HDFS: Number of read operations=6
+		HDFS: Number of large read operations=0
+		HDFS: Number of write operations=2
+	Job Counters 
+		Launched map tasks=1
+		Launched reduce tasks=1
+		Data-local map tasks=1
+		Total time spent by all maps in occupied slots (ms)=18211
+		Total time spent by all reduces in occupied slots (ms)=19522
+		Total time spent by all map tasks (ms)=18211
+		Total time spent by all reduce tasks (ms)=19522
+		Total vcore-milliseconds taken by all map tasks=18211
+		Total vcore-milliseconds taken by all reduce tasks=19522
+		Total megabyte-milliseconds taken by all map tasks=18648064
+		Total megabyte-milliseconds taken by all reduce tasks=19990528
+	Map-Reduce Framework
+		Map input records=215
+		Map output records=432
+		Map output bytes=14256
+		Map output materialized bytes=15126
+		Input split bytes=148
+		Combine input records=0
+		Combine output records=0
+		Reduce input groups=6
+		Reduce shuffle bytes=15126
+		Reduce input records=432
+		Reduce output records=5
+    Spilled Records=432
+    Shuffled Maps =1
+    Failed Shuffles=0
+    Merged Map outputs=1
+		GC time elapsed (ms)=545
+		CPU time spent (ms)=3800
+		Physical memory (bytes) snapshot=366235648
+		Virtual memory (bytes) snapshot=3015909376
+		Total committed heap usage (bytes)=226365440
+	Shuffle Errors
+		BAD_ID=0
+		CONNECTION=0
+		IO_ERROR=0
+		WRONG_LENGTH=0
+		WRONG_MAP=0
+		WRONG_REDUCE=0
+	File Input Format Counters 
+		Bytes Read=14989
+	File Output Format Counters 
+		Bytes Written=160
+[cloudera@quickstart hadoop]$ hadoop fs -cat /user/cloudera/RelativeFrequencyPair/output/*
+org.myorg.Pair@12d5d	216.0
+org.myorg.Pair@2a8cd0	118.0
+org.myorg.Pair@2aa410	90.0
+org.myorg.Pair@2aa645	4.0
+org.myorg.Pair@2aa7c8	2.0
+org.myorg.Pair@2ab11a	2.0
