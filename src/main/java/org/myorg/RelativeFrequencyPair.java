@@ -4,7 +4,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
 import org.apache.hadoop.conf.Configuration;
@@ -24,7 +23,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 public class RelativeFrequencyPair {
 
-  public static class Map extends Mapper<LongWritable, Text, MapPairString, IntWritable> {
+  public static class Map extends Mapper<LongWritable, Text, MapPair, IntWritable> {
 
     private static final IntWritable one = new IntWritable(1);
     private Text word = new Text();
@@ -44,7 +43,7 @@ public class RelativeFrequencyPair {
         int count = 0;
         for (int j = i + 1; count < 2 && j < wordList.size(); j++) {
           if (!wordList.get(i).equals(wordList.get(j))) {
-            MapPairString pair = new MapPairString();
+            MapPair pair = new MapPair();
             pair.key = new Text(wordList.get(i));
             pair.value = new Text(wordList.get(j));
             context.write(pair, one);
@@ -60,12 +59,12 @@ public class RelativeFrequencyPair {
   }
 
   public static class Reduce extends
-      Reducer<MapPairString, IntWritable, MapPairString, DoubleWritable> {
+      Reducer<MapPair, IntWritable, MapPair, DoubleWritable> {
 
     private static double total = 1d;
 
     @Override
-    protected void reduce(MapPairString key, Iterable<IntWritable> values, Context context)
+    protected void reduce(MapPair key, Iterable<IntWritable> values, Context context)
         throws IOException, InterruptedException {
       int s = 0;
       for (IntWritable c : values) {
@@ -80,45 +79,15 @@ public class RelativeFrequencyPair {
     }
   }
 
-  static class MapPair extends Pair<Text, IntWritable> implements WritableComparable<MapPair> {
+  static class MapPair extends Pair<Text, Text> implements WritableComparable<MapPair> {
 
     public MapPair() {
-    }
-
-    @Override
-    public int compareTo(MapPair o) {
-      if (o == null) {
-        return 1;
-      }
-      if (key.compareTo(o.key) == 0) {
-        return value.compareTo(o.value);
-      } else {
-        return key.compareTo(o.key);
-      }
-    }
-
-    @Override
-    public void write(DataOutput dataOutput) throws IOException {
-      key.write(dataOutput);
-      value.write(dataOutput);
-    }
-
-    @Override
-    public void readFields(DataInput dataInput) throws IOException {
-      key.readFields(dataInput);
-      value.readFields(dataInput);
-    }
-  }
-
-  static class MapPairString extends Pair<Text, Text> implements WritableComparable<MapPairString> {
-
-    public MapPairString() {
       this.key = new Text();
       this.value = new Text();
     }
 
     @Override
-    public int compareTo(MapPairString o) {
+    public int compareTo(MapPair o) {
       if (o == null) {
         return 1;
       }
@@ -148,7 +117,7 @@ public class RelativeFrequencyPair {
     Job job = new Job(conf, "relativefrequency");
     job.setJarByClass(RelativeFrequencyPair.class);
 
-    job.setOutputKeyClass(MapPairString.class);
+    job.setOutputKeyClass(MapPair.class);
     job.setOutputValueClass(IntWritable.class);
 
     job.setMapperClass(Map.class);
